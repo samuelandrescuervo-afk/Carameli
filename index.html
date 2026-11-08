@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Carameli | Galletas Artesanales Gourmet</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Forum + Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Forum&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- SheetJS para XLSX -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            earth: {
+              50: '#FAF6F0',
+              100: '#F2E8DC',
+              200: '#E2D1BE',
+              300: '#CBB196',
+              500: '#B86F28',
+              600: '#94541B',
+              700: '#6E3A10',
+              800: '#422008',
+              900: '#1C0D09'
+            }
+          },
+          fontFamily: {
+            heading: ['"Forum"', 'serif'],
+            sans: ['"Plus Jakarta Sans"', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #FAF6F0; color: #1C0D09; }
+    h1, h2, h3, .font-heading { font-family: 'Forum', serif; }
+    .excel-table th, .excel-table td { border: 1px solid #E2E8F0; }
+    .highlight-row { animation: highlightGreen 2s ease-out; }
+    @keyframes highlightGreen {
+      0% { background-color: #BBF7D0; }
+      100% { background-color: transparent; }
+    }
+    .custom-scroll::-webkit-scrollbar { width: 6px; }
+    .custom-scroll::-webkit-scrollbar-thumb { background-color: #CBB196; border-radius: 9999px; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between antialiased">
+
+  <!-- TOP BANNER -->
+  <div class="bg-earth-900 text-amber-200/90 text-center py-2.5 text-xs font-semibold tracking-wider flex justify-center items-center gap-2 px-4 border-b border-earth-800">
+    <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-400"></i>
+    <span>Descuentos automáticos por volumen a partir de 5 unidades • Envíos locales y nacionales</span>
+  </div>
+
+  <!-- HEADER NAVIGATION WITH LOGO -->
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-earth-200 text-earth-900 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      
+      <!-- BRAND LOGO -->
+      <div class="flex items-center space-x-3 cursor-pointer" onclick="showView('store')">
+        <div class="w-11 h-11 rounded-xl bg-earth-900 shadow-md flex items-center justify-center">
+          <svg class="w-6 h-6 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm3-4c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-6-2c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm8-3c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/>
+          </svg>
+        </div>
+        <div>
+          <span class="font-heading text-3xl font-normal tracking-wider text-earth-900 block leading-none">CARAMELI</span>
+          <span class="text-[10px] text-earth-600 font-extrabold tracking-[0.25em] uppercase block mt-0.5">Galletas Artesanales</span>
+        </div>
+      </div>
+
+      <!-- NAV BUTTONS -->
+      <nav class="flex items-center space-x-3 sm:space-x-4">
+        <button onclick="showView('store')" id="nav-store" class="text-earth-900 font-bold hover:text-earth-600 transition flex items-center gap-1.5 text-sm px-3 py-2">
+          <i data-lucide="cookie" class="w-4 h-4 text-earth-600"></i>
+          <span>Menú</span>
+        </button>
+
+        <button onclick="openCartModal()" class="relative bg-earth-900 hover:bg-earth-800 text-white px-4 py-2.5 rounded-xl font-bold transition flex items-center gap-2 shadow-sm text-sm">
+          <i data-lucide="shopping-bag" class="w-4 h-4 text-amber-400"></i>
+          <span>Mi Pedido</span>
+          <span id="cart-badge" class="bg-earth-500 text-white text-xs font-black w-5 h-5 rounded-full flex items-center justify-center">0</span>
+        </button>
+
+        <button onclick="promptAdminLogin()" id="nav-admin" class="text-slate-500 hover:text-earth-900 transition text-xs flex items-center gap-1 border border-slate-300 px-3 py-2 rounded-xl font-medium">
+          <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+          <span>Dueño</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- STORE VIEW -->
+  <main id="view-store" class="flex-grow w-full">
+    <!-- HERO BANNER -->
+    <div class="w-full bg-earth-900 text-amber-50 px-4 sm:px-6 lg:px-8 py-12 md:py-16 border-b border-earth-800">
+      <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
+        <div class="max-w-2xl space-y-4">
+          <span class="inline-flex items-center gap-2 bg-earth-800 border border-earth-700 text-amber-300 text-xs font-bold px-3.5 py-1.5 rounded-full uppercase tracking-wider">
+            <i data-lucide="flame" class="w-3.5 h-3.5 text-amber-400"></i> Receta de Autor • Horneadas Hoy
+          </span>
+          <h1 class="text-4xl sm:text-5xl md:text-6xl font-normal font-heading text-amber-50 leading-[1.1] tracking-wide">
+            Crujientes por fuera, suavemente fundidas al centro.
+          </h1>
+          <p class="text-amber-200/80 text-base md:text-lg leading-relaxed">
+            Galletas artesanalmente horneadas con mantequilla de alta repostería y selecciones de cacao puro. Precio unificado: <strong class="text-amber-300 font-bold">$11.000 COP</strong> c/u.
+          </p>
+          <div class="pt-2 flex flex-wrap gap-6 text-xs sm:text-sm font-semibold text-amber-200">
+            <div class="flex items-center gap-2"><i data-lucide="check-circle-2" class="w-4 h-4 text-amber-400"></i> Descuentos en Pack</div>
+            <div class="flex items-center gap-2"><i data-lucide="check-circle-2" class="w-4 h-4 text-amber-400"></i> Domicilios Directos</div>
+            <div class="flex items-center gap-2"><i data-lucide="check-circle-2" class="w-4 h-4 text-amber-400"></i> Control de Stock en Vivo</div>
+          </div>
+        </div>
+
+        <div class="w-full md:w-auto flex justify-center">
+          <div class="grid grid-cols-2 gap-3 max-w-xs">
+            <img src="https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&w=400&q=80" class="w-36 h-36 object-cover rounded-2xl shadow-lg border border-earth-800">
+            <img src="https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&w=400&q=80" class="w-36 h-36 object-cover rounded-2xl shadow-lg border border-earth-800">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN CATÁLOGO -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div class="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 border-b border-earth-200 pb-4">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-widest text-earth-600">Catálogo Gourmet</span>
+          <h2 class="text-3xl md:text-4xl font-normal font-heading text-earth-900 tracking-wide">Nuestras Galletas Artesanales</h2>
+        </div>
+        <div class="text-slate-500 text-xs font-medium">
+          Selecciona las cantidades para tu pedido
+        </div>
+      </div>
+
+      <!-- GRID PRODUCTOS -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8" id="products-grid">
+        <!-- Inyectado por JS -->
+      </div>
+    </div>
+  </main>
+
+  <!-- ADMIN LOGIN MODAL -->
+  <div id="login-modal" class="fixed inset-0 bg-earth-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl text-center space-y-4 border border-earth-100">
+      <div class="w-12 h-12 bg-earth-100 text-earth-700 rounded-full flex items-center justify-center mx-auto">
+        <i data-lucide="lock" class="w-5 h-5"></i>
+      </div>
+      <div>
+        <h3 class="text-xl font-normal font-heading text-earth-900">Portal del Propietario</h3>
+        <p class="text-xs text-slate-500 mt-1">Ingresa tu contraseña para acceder al Excel de pedidos e inventario.</p>
+      </div>
+      <input type="password" id="admin-pass-input" placeholder="Contraseña (ej. admin123)" class="w-full text-sm p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-earth-600 outline-none text-center">
+      <p id="login-error" class="text-xs text-red-600 hidden">Contraseña incorrecta.</p>
+      <div class="flex gap-2 pt-2">
+        <button onclick="closeLoginModal()" class="w-1/2 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-semibold text-xs hover:bg-slate-50">Cancelar</button>
+        <button onclick="verifyAdminPass()" class="w-1/2 py-2.5 rounded-xl bg-earth-900 hover:bg-earth-800 text-white font-bold text-xs shadow-md">Ingresar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN EXCEL VIEW -->
+  <main id="view-admin" class="hidden flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full space-y-8">
+    
+    <!-- DASHBOARD VENTA -->
+    <div class="bg-white rounded-3xl shadow-sm border border-earth-200 p-6 sm:p-8">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-6 border-b border-earth-100">
+        <div>
+          <span class="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2.5 py-1 rounded uppercase tracking-wider">Excel Dashboard Vivo</span>
+          <h2 class="text-2xl font-normal font-heading text-earth-900 mt-1">Consolidado General de Pedidos</h2>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 shadow-sm transition">
+            <i data-lucide="download" class="w-4 h-4"></i> Descargar Excel (.xlsx)
+          </button>
+          <button onclick="clearAllData()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2.5 rounded-xl text-xs flex items-center gap-1 font-semibold">
+            <i data-lucide="trash-2" class="w-4 h-4"></i> Limpiar Pedidos
+          </button>
+          <button onclick="logoutAdmin()" class="bg-red-50 text-red-600 px-3 py-2.5 rounded-xl text-xs flex items-center gap-1 font-semibold hover:bg-red-100">
+            <i data-lucide="log-out" class="w-4 h-4"></i> Salir
+          </button>
+        </div>
+      </div>
+
+      <!-- KPIS VENTAS E INVENTARIO -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div class="bg-earth-50 border border-earth-200 rounded-2xl p-4">
+          <div class="text-[11px] font-bold text-earth-700 uppercase tracking-wider">Ingresos Totales</div>
+          <div class="text-2xl font-black text-earth-900 mt-1" id="kpi-revenue">$0 COP</div>
+        </div>
+        <div class="bg-blue-50/60 border border-blue-200 rounded-2xl p-4">
+          <div class="text-[11px] font-bold text-blue-800 uppercase tracking-wider">Total Pedidos</div>
+          <div class="text-2xl font-black text-blue-900 mt-1" id="kpi-orders">0</div>
+        </div>
+        <div class="bg-emerald-50/60 border border-emerald-200 rounded-2xl p-4">
+          <div class="text-[11px] font-bold text-emerald-800 uppercase tracking-wider">Galletas Vendidas</div>
+          <div class="text-2xl font-black text-emerald-900 mt-1" id="kpi-units">0 unids</div>
+        </div>
+        <div class="bg-amber-50/80 border border-amber-300 rounded-2xl p-4">
+          <div class="text-[11px] font-bold text-amber-900 uppercase tracking-wider">Stock Total Disponible</div>
+          <div class="text-2xl font-black text-amber-900 mt-1" id="kpi-total-stock">0 unids</div>
+        </div>
+      </div>
+
+      <!-- GESTOR DE INVENTARIO EN EL PANEL -->
+      <div class="mb-8 bg-earth-50/80 border border-earth-200 rounded-2xl p-6">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+          <div>
+            <h3 class="text-lg font-bold font-heading text-earth-900 flex items-center gap-2">
+              <i data-lucide="boxes" class="w-5 h-5 text-earth-600"></i> Control y Ajuste de Inventario
+            </h3>
+            <p class="text-xs text-slate-500">Aumenta o descuenta unidades manualmente para cada sabor.</p>
+          </div>
+          <button onclick="resetInventory()" class="text-xs bg-white border border-earth-300 px-3 py-1.5 rounded-xl text-earth-800 font-semibold hover:bg-earth-100 transition">
+            Resetear Stock a 50 c/u
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="admin-inventory-cards">
+          <!-- Inyectado por JS -->
+        </div>
+      </div>
+
+      <!-- FILTROS TABLA EXCEL -->
+      <div class="bg-earth-50/60 p-4 rounded-2xl border border-earth-200 mb-6 flex flex-wrap gap-4 items-center justify-between">
+        <div class="flex items-center gap-2 text-xs font-bold text-earth-800">
+          <i data-lucide="filter" class="w-4 h-4 text-earth-600"></i> Filtros de Tabla:
+        </div>
+        <div class="flex flex-wrap gap-3">
+          <select id="filter-city" onchange="renderAdminTable()" class="bg-white border border-earth-200 text-earth-900 text-xs rounded-xl p-2.5 font-medium outline-none">
+            <option value="ALL">Todas las Ciudades</option>
+            <option value="Bogotá">Bogotá D.C.</option>
+            <option value="Medellín">Medellín</option>
+            <option value="Cali">Cali</option>
+            <option value="Barranquilla">Barranquilla</option>
+            <option value="Otras">Otras</option>
+          </select>
+          <select id="filter-volume" onchange="renderAdminTable()" class="bg-white border border-earth-200 text-earth-900 text-xs rounded-xl p-2.5 font-medium outline-none">
+            <option value="ALL">Todos los Volúmenes</option>
+            <option value="LOW">Minorista (1 - 4 unids)</option>
+            <option value="MID">Pack Familiar (5 - 9 unids)</option>
+            <option value="HIGH">Mayorista (10+ unids)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- TABLA EXCEL -->
+      <div class="overflow-x-auto rounded-2xl border border-slate-200">
+        <table class="w-full text-xs text-left text-slate-700 excel-table">
+          <thead class="text-[11px] text-earth-900 uppercase bg-earth-100 font-bold">
+            <tr>
+              <th class="px-4 py-3">ID</th>
+              <th class="px-4 py-3">Fecha y Hora</th>
+              <th class="px-4 py-3">Cliente</th>
+              <th class="px-4 py-3">Ciudad</th>
+              <th class="px-4 py-3">Barrio</th>
+              <th class="px-4 py-3">Pago</th>
+              <th class="px-4 py-3 text-center">Unid</th>
+              <th class="px-4 py-3">Detalle del Pedido</th>
+              <th class="px-4 py-3 text-right">Total ($ COP)</th>
+              <th class="px-4 py-3 text-center">Estado</th>
+            </tr>
+          </thead>
+          <tbody id="excel-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="bg-earth-900 text-amber-200/60 text-xs py-8 mt-auto border-t border-earth-800">
+    <div class="max-w-7xl mx-auto px-4 text-center flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div class="flex items-center gap-2">
+        <span class="font-heading text-lg font-normal text-amber-100 tracking-wider">CARAMELI</span>
+        <span class="text-amber-400/60">| Galletas Artesanales</span>
+      </div>
+      <div>© 2026 Carameli Pastry Co. Todos los derechos reservados.</div>
+    </div>
+  </footer>
+
+  <!-- MODAL CHECKOUT -->
+  <div id="cart-modal" class="fixed inset-0 bg-earth-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-earth-100">
+      <div class="p-6 bg-earth-900 text-amber-50 flex justify-between items-center">
+        <div class="flex items-center gap-2">
+          <i data-lucide="shopping-bag" class="w-5 h-5 text-amber-400"></i>
+          <h3 class="text-xl font-normal font-heading tracking-wide">Tu Carrito de Pedido</h3>
+        </div>
+        <button onclick="closeCartModal()" class="text-amber-200/60 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <div class="p-6 overflow-y-auto flex-grow space-y-6 custom-scroll">
+        <div id="cart-items-container" class="space-y-3 divide-y divide-earth-100"></div>
+
+        <div class="bg-earth-50/70 p-4 rounded-2xl border border-earth-200 space-y-3">
+          <h4 class="font-bold text-earth-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
+            <i data-lucide="map-pin" class="w-4 h-4 text-earth-600"></i> Datos de Envío y Facturación
+          </h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[11px] font-semibold text-earth-800 mb-1">Nombre Completo *</label>
+              <input type="text" id="cust-name" placeholder="Ej. Sofía Gómez" class="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-earth-600 outline-none">
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-earth-800 mb-1">Teléfono WhatsApp *</label>
+              <input type="tel" id="cust-phone" placeholder="Ej. 3101234567" class="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-earth-600 outline-none">
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-earth-800 mb-1">Ciudad *</label>
+              <select id="cust-city" class="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-earth-600 outline-none">
+                <option value="Bogotá">Bogotá D.C.</option>
+                <option value="Medellín">Medellín</option>
+                <option value="Cali">Cali</option>
+                <option value="Barranquilla">Barranquilla</option>
+                <option value="Bucaramanga">Bucaramanga</option>
+                <option value="Ibagué">Ibagué</option>
+                <option value="Cartagena">Cartagena</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-earth-800 mb-1">Barrio / Sector *</label>
+              <input type="text" id="cust-location" placeholder="Ej. Chapinero / El Poblado" class="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-earth-600 outline-none">
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-[11px] font-semibold text-earth-800 mb-1">Dirección Exacta de Entrega *</label>
+              <input type="text" id="cust-address" placeholder="Ej. Calle 85 # 14 - 20 Apt 501" class="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-earth-600 outline-none">
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-[11px] font-semibold text-earth-800 mb-1">Método de Pago *</label>
+              <select id="cust-payment" class="w-full text-xs p-2.5 rounded-xl border border-earth-300 focus:ring-2 focus:ring-earth-600 outline-none font-bold text-earth-900 bg-white">
+                <option value="Contraentrega (Efectivo / Datáfono)">💵 Pago Contraentrega (Efectivo / Datáfono)</option>
+                <option value="PSE (Débito Bancario)">💳 PSE (Débito Bancario Colombia)</option>
+                <option value="Nequi / Daviplata">📲 Nequi / Daviplata</option>
+                <option value="Tarjeta de Crédito">💳 Tarjeta de Crédito / Débito</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-earth-50 p-4 rounded-2xl border border-earth-200 text-xs space-y-2">
+          <div class="flex justify-between text-slate-600"><span>Subtotal:</span><span id="summary-subtotal">$0 COP</span></div>
+          <div class="flex justify-between text-emerald-700 font-semibold"><span>Descuento Especial:</span><span id="summary-discount">-$0 COP</span></div>
+          <div class="flex justify-between text-slate-600"><span>Envío Fijo:</span><span id="summary-shipping">$5.000 COP</span></div>
+          <div class="border-t border-earth-200 pt-2 flex justify-between font-black text-sm text-earth-900">
+            <span>TOTAL FACTURA:</span><span id="summary-total" class="text-earth-600">$0 COP</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
+        <button onclick="closeCartModal()" class="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-100">Regresar</button>
+        <button onclick="processOrder()" class="px-5 py-2.5 rounded-xl bg-earth-900 hover:bg-earth-800 text-white font-bold text-xs shadow-md">Confirmar Pedido</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- INVOICE MODAL -->
+  <div id="invoice-modal" class="fixed inset-0 bg-earth-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl text-center space-y-4 border border-earth-100">
+      <div class="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+        <i data-lucide="check-circle-2" class="w-8 h-8"></i>
+      </div>
+      <div>
+        <h3 class="text-2xl font-normal font-heading text-earth-900">¡Pedido Registrado!</h3>
+        <p class="text-xs text-slate-500 mt-1">Tu factura ha sido generada y el inventario descontado.</p>
+      </div>
+      <div id="invoice-content" class="bg-earth-50 p-4 rounded-2xl border border-earth-200 text-left text-xs space-y-1.5"></div>
+      <button onclick="closeInvoiceModal()" class="w-full py-3 rounded-xl bg-earth-800 text-amber-50 font-bold text-xs shadow-md hover:bg-earth-900">Volver a la Tienda</button>
+    </div>
+  </div>
+
+  <!-- CHATBOT FLOTANTE -->
+  <div class="fixed bottom-6 right-6 z-50">
+    <button onclick="toggleChatbot()" class="bg-earth-900 hover:bg-earth-800 text-amber-300 p-4 rounded-full shadow-2xl border border-amber-400/30 flex items-center gap-3 transition transform hover:scale-105">
+      <i data-lucide="message-square" class="w-6 h-6"></i>
+      <span class="font-bold text-xs text-white hidden sm:inline">Asistente Carameli</span>
+    </button>
+
+    <div id="chatbot-box" class="hidden absolute bottom-16 right-0 w-80 sm:w-96 bg-white rounded-3xl shadow-2xl border border-earth-200 overflow-hidden flex flex-col h-[480px]">
+      <div class="bg-earth-900 text-white p-4 flex justify-between items-center border-b border-earth-800">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-amber-400/20 flex items-center justify-center text-amber-400">
+            <i data-lucide="cookie" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h4 class="font-bold text-xs text-amber-100 leading-tight">Asistente Carameli</h4>
+            <span class="text-[10px] text-emerald-400 flex items-center gap-1">● En línea • Inventario activo</span>
+          </div>
+        </div>
+        <button onclick="toggleChatbot()" class="text-amber-200/60 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <div id="chat-messages" class="flex-grow p-4 overflow-y-auto space-y-3 text-xs custom-scroll bg-earth-50/50">
+        <div class="bg-white p-3 rounded-2xl border border-earth-100 shadow-sm text-slate-700 space-y-1">
+          <p class="font-bold text-earth-900">¡Hola! 🍪 Bienvenido a Carameli.</p>
+          <p>¿En qué puedo ayudarte hoy? Puedo informarte de sabores, precios, stock disponible o tomar tu pedido.</p>
+        </div>
+      </div>
+
+      <div class="p-2 border-t border-earth-100 bg-white flex flex-wrap gap-1">
+        <button onclick="sendQuickReply('Precios y Promos')" class="text-[10px] bg-earth-50 border border-earth-200 text-earth-800 px-2.5 py-1 rounded-full font-semibold hover:bg-earth-100">💰 Precios</button>
+        <button onclick="sendQuickReply('Stock disponible')" class="text-[10px] bg-earth-50 border border-earth-200 text-earth-800 px-2.5 py-1 rounded-full font-semibold hover:bg-earth-100">📦 Disponibilidad</button>
+        <button onclick="sendQuickReply('Hacer un pedido')" class="text-[10px] bg-earth-50 border border-earth-200 text-earth-800 px-2.5 py-1 rounded-full font-semibold hover:bg-earth-100">🛒 Hacer Pedido</button>
+      </div>
+
+      <div class="p-3 bg-white border-t border-earth-100 flex gap-2">
+        <input type="text" id="chat-input" onkeydown="if(event.key==='Enter') sendMessage()" placeholder="Escribe tu mensaje..." class="flex-grow text-xs p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-earth-600 outline-none">
+        <button onclick="sendMessage()" class="bg-earth-900 hover:bg-earth-800 text-amber-300 px-3.5 rounded-xl font-bold transition flex items-center justify-center">
+          <i data-lucide="send" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const ADMIN_PASSWORD = "admin123";
+    let isAuthenticated = false;
+
+    const COOKIE_IMAGE = 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&w=800&q=80';
+
+    const PRODUCTS = [
+      {
+        id: 'c1',
+        name: 'Galleta Eclipse',
+        badge: 'Nutella Rellena',
+        description: 'Masa de cacao supremo horneada con centro suave y derretido de cremosa Nutella.',
+        price: 11000,
+        image: COOKIE_IMAGE
+      },
+      {
+        id: 'c2',
+        name: 'Galleta Tentación',
+        badge: 'Chispas Clásicas',
+        description: 'Masa dorada elaborada con mantequilla artesanal y trozos de chocolate semi-amargo.',
+        price: 11000,
+        image: COOKIE_IMAGE
+      },
+      {
+        id: 'c3',
+        name: 'Galleta Hechizo',
+        badge: 'S’mores & Masmelo',
+        description: 'Galleta artesanal con centro de malvavisco horneado dorado y suave chocolate fundido.',
+        price: 11000,
+        image: COOKIE_IMAGE
+      },
+      {
+        id: 'c4',
+        name: 'Galleta Golosa',
+        badge: 'Chocolate & Nuez',
+        description: 'Fudge de chocolate oscuro artesanal horneado con abundantes trozos de nuez crocante.',
+        price: 11000,
+        image: COOKIE_IMAGE
+      }
+    ];
+
+    // INVENTARIO INICIAL (Almacenado localmente)
+    let inventory = JSON.parse(localStorage.getItem('carameli_inventory') || JSON.stringify({
+      c1: 50,
+      c2: 50,
+      c3: 50,
+      c4: 50
+    }));
+
+    let cart = {};
+    let orders = JSON.parse(localStorage.getItem('carameli_orders') || '[]');
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderProducts();
+      renderAdminTable();
+      lucide.createIcons();
+    });
+
+    function promptAdminLogin() {
+      if (isAuthenticated) {
+        showView('admin');
+      } else {
+        document.getElementById('admin-pass-input').value = '';
+        document.getElementById('login-error').classList.add('hidden');
+        document.getElementById('login-modal').classList.remove('hidden');
+      }
+    }
+
+    function closeLoginModal() {
+      document.getElementById('login-modal').classList.add('hidden');
+    }
+
+    function verifyAdminPass() {
+      if (document.getElementById('admin-pass-input').value === ADMIN_PASSWORD) {
+        isAuthenticated = true;
+        closeLoginModal();
+        showView('admin');
+      } else {
+        document.getElementById('login-error').classList.remove('hidden');
+      }
+    }
+
+    function logoutAdmin() {
+      isAuthenticated = false;
+      showView('store');
+    }
+
+    function showView(view) {
+      if (view === 'store') {
+        document.getElementById('view-store').classList.remove('hidden');
+        document.getElementById('view-admin').classList.add('hidden');
+      } else {
+        if (!isAuthenticated) {
+          promptAdminLogin();
+          return;
+        }
+        document.getElementById('view-store').classList.add('hidden');
+        document.getElementById('view-admin').classList.remove('hidden');
+        renderAdminTable();
+      }
+    }
+
+    function renderProducts() {
+      const grid = document.getElementById('products-grid');
+      grid.innerHTML = PRODUCTS.map(p => {
+        const stock = inventory[p.id] || 0;
+        const isOut = stock <= 0;
+        const isLow = stock > 0 && stock <= 5;
+
+        return `
+          <div class="bg-white rounded-3xl overflow-hidden shadow-sm border border-earth-200 hover:shadow-xl hover:-translate-y-1 transition duration-300 flex flex-col justify-between ${isOut ? 'opacity-75' : ''}">
+            <div>
+              <div class="h-56 overflow-hidden relative bg-earth-100">
+                <img src="${p.image}" alt="${p.name}" class="w-full h-full object-cover">
+                <span class="absolute top-3 left-3 bg-earth-900 text-amber-300 text-[10px] font-black uppercase px-3 py-1 rounded-full shadow-sm">
+                  ${p.badge}
+                </span>
+                
+                ${isOut ? `
+                  <span class="absolute top-3 right-3 bg-red-600 text-white text-[10px] font-black uppercase px-3 py-1 rounded-full shadow-md">
+                    Agotado
+                  </span>
+                ` : isLow ? `
+                  <span class="absolute top-3 right-3 bg-amber-500 text-white text-[10px] font-black uppercase px-3 py-1 rounded-full shadow-md">
+                    ¡Últimas ${stock}!
+                  </span>
+                ` : `
+                  <span class="absolute top-3 right-3 bg-emerald-700 text-white text-[10px] font-bold uppercase px-2.5 py-1 rounded-full shadow-sm">
+                    Stock: ${stock}
+                  </span>
+                `}
+
+                <span class="absolute bottom-3 right-3 bg-earth-900/90 text-amber-200 text-xs font-bold px-3 py-1 rounded-full border border-amber-400/20">
+                  $${p.price.toLocaleString('es-CO')} COP
+                </span>
+              </div>
+              <div class="p-6">
+                <h3 class="text-2xl font-normal font-heading text-earth-900 mb-2">${p.name}</h3>
+                <p class="text-slate-600 text-xs leading-relaxed mb-4">${p.description}</p>
+              </div>
+            </div>
+            <div class="px-6 pb-6">
+              <button onclick="addToCart('${p.id}')" ${isOut ? 'disabled' : ''} class="w-full py-3 ${isOut ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-earth-900 hover:bg-earth-800 text-white'} font-bold rounded-2xl text-xs transition flex items-center justify-center gap-2 shadow-sm">
+                <i data-lucide="${isOut ? 'slash' : 'plus-circle'}" class="w-4 h-4 ${isOut ? '' : 'text-amber-400'}"></i> ${isOut ? 'Agotado Temporalmente' : 'Añadir a mi Pedido'}
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    function addToCart(id) {
+      const stock = inventory[id] || 0;
+      const currentCartQty = cart[id] || 0;
+
+      if (currentCartQty + 1 > stock) {
+        alert(`¡Lo sentimos! Solo quedan ${stock} unidades disponibles de esta galleta.`);
+        return;
+      }
+
+      cart[id] = currentCartQty + 1;
+      updateCartBadge();
+    }
+
+    function updateCartBadge() {
+      const totalUnits = Object.values(cart).reduce((a, b) => a + b, 0);
+      document.getElementById('cart-badge').innerText = totalUnits;
+    }
+
+    function openCartModal() {
+      renderCartItems();
+      document.getElementById('cart-modal').classList.remove('hidden');
+    }
+
+    function closeCartModal() {
+      document.getElementById('cart-modal').classList.add('hidden');
+    }
+
+    function renderCartItems() {
+      const container = document.getElementById('cart-items-container');
+      const keys = Object.keys(cart);
+
+      if (keys.length === 0) {
+        container.innerHTML = `<p class="text-center text-slate-400 text-xs py-4">Aún no has agregado galletas a tu pedido.</p>`;
+        updateSummary(0);
+        return;
+      }
+
+      let subtotal = 0;
+      let totalUnits = 0;
+
+      container.innerHTML = keys.map(id => {
+        const prod = PRODUCTS.find(p => p.id === id);
+        const qty = cart[id];
+        const stock = inventory[id] || 0;
+        const itemTotal = prod.price * qty;
+        subtotal += itemTotal;
+        totalUnits += qty;
+
+        return `
+          <div class="flex items-center justify-between pt-3">
+            <div class="flex items-center gap-3">
+              <img src="${prod.image}" class="w-12 h-12 rounded-xl object-cover border border-earth-200">
+              <div>
+                <div class="font-bold text-earth-900 text-xs">${prod.name}</div>
+                <div class="text-[11px] text-slate-400">$11.000 COP c/u (Disp: ${stock})</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="flex items-center border border-earth-200 rounded-lg overflow-hidden bg-white">
+                <button onclick="changeQty('${id}', -1)" class="px-2 py-1 text-slate-600 hover:bg-earth-100 font-bold">-</button>
+                <span class="px-2.5 text-xs font-bold text-earth-900">${qty}</span>
+                <button onclick="changeQty('${id}', 1)" class="px-2 py-1 text-slate-600 hover:bg-earth-100 font-bold">+</button>
+              </div>
+              <span class="text-xs font-bold text-earth-900">$${itemTotal.toLocaleString('es-CO')}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      updateSummary(subtotal, totalUnits);
+    }
+
+    function changeQty(id, delta) {
+      const stock = inventory[id] || 0;
+      const current = cart[id] || 0;
+
+      if (delta > 0 && current + delta > stock) {
+        alert(`No puedes agregar más unidades. Solo hay ${stock} disponibles.`);
+        return;
+      }
+
+      cart[id] = current + delta;
+      if (cart[id] <= 0) delete cart[id];
+      updateCartBadge();
+      renderCartItems();
+    }
+
+    function updateSummary(subtotal, totalUnits = 0) {
+      let discountRate = 0;
+      if (totalUnits >= 10) discountRate = 0.10;
+      else if (totalUnits >= 5) discountRate = 0.05;
+
+      const discount = subtotal * discountRate;
+      const shipping = (totalUnits >= 10 || subtotal === 0) ? 0 : 5000;
+      const total = subtotal - discount + shipping;
+
+      document.getElementById('summary-subtotal').innerText = `$${subtotal.toLocaleString('es-CO')} COP`;
+      document.getElementById('summary-discount').innerText = `-$${discount.toLocaleString('es-CO')} COP ${discountRate > 0 ? `(${discountRate * 100}%)` : ''}`;
+      document.getElementById('summary-shipping').innerText = shipping === 0 && subtotal > 0 ? '¡GRATIS!' : `$${shipping.toLocaleString('es-CO')} COP`;
+      document.getElementById('summary-total').innerText = `$${total.toLocaleString('es-CO')} COP`;
+
+      return { subtotal, discount, shipping, total, totalUnits };
+    }
+
+    // PROCESAMIENTO CON DESCUENTO DE INVENTARIO
+    function processOrder() {
+      const name = document.getElementById('cust-name').value.trim();
+      const phone = document.getElementById('cust-phone').value.trim();
+      const city = document.getElementById('cust-city').value;
+      const location = document.getElementById('cust-location').value.trim();
+      const address = document.getElementById('cust-address').value.trim();
+      const paymentMethod = document.getElementById('cust-payment').value;
+
+      if (!name || !phone || !location || !address) {
+        alert('Por favor completa todos los datos de contacto y entrega.');
+        return;
+      }
+
+      const totalUnits = Object.values(cart).reduce((a, b) => a + b, 0);
+      if (totalUnits === 0) {
+        alert('Por favor agrega al menos una galleta a tu pedido.');
+        return;
+      }
+
+      // Validación final estricta de stock disponible
+      for (let id in cart) {
+        if (cart[id] > (inventory[id] || 0)) {
+          const p = PRODUCTS.find(x => x.id === id);
+          alert(`Error de Stock: No hay suficientes unidades de ${p.name}. Disponibles: ${inventory[id] || 0}.`);
+          return;
+        }
+      }
+
+      // Descontar inventario
+      for (let id in cart) {
+        inventory[id] -= cart[id];
+      }
+      localStorage.setItem('carameli_inventory', JSON.stringify(inventory));
+
+      let subtotal = 0;
+      const itemsDetail = Object.keys(cart).map(id => {
+        const prod = PRODUCTS.find(p => p.id === id);
+        const qty = cart[id];
+        subtotal += prod.price * qty;
+        return `${qty}x ${prod.name}`;
+      }).join(', ');
+
+      const { discount, shipping, total } = updateSummary(subtotal, totalUnits);
+
+      const newOrder = {
+        id: 'CRM-' + Math.floor(100000 + Math.random() * 900000),
+        date: new Date().toLocaleString('es-CO'),
+        customerName: name,
+        phone: phone,
+        city: city,
+        location: location,
+        address: address,
+        paymentMethod: paymentMethod,
+        units: totalUnits,
+        itemsDetail: itemsDetail,
+        subtotal: subtotal,
+        discount: discount,
+        total: total,
+        status: 'Confirmado'
+      };
+
+      orders.unshift(newOrder);
+      localStorage.setItem('carameli_orders', JSON.stringify(orders));
+
+      document.getElementById('invoice-content').innerHTML = `
+        <div class="border-b border-earth-200 pb-2 mb-2 font-bold text-earth-900 text-sm">Comprobante de Factura #${newOrder.id}</div>
+        <div><strong>Cliente:</strong> ${newOrder.customerName}</div>
+        <div><strong>Teléfono:</strong> ${newOrder.phone}</div>
+        <div><strong>Destino:</strong> ${newOrder.city} (${newOrder.location})</div>
+        <div><strong>Dirección:</strong> ${newOrder.address}</div>
+        <div><strong>Método de Pago:</strong> ${newOrder.paymentMethod}</div>
+        <div class="pt-2 border-t border-earth-200"><strong>Productos:</strong> ${newOrder.itemsDetail}</div>
+        <div class="pt-2 border-t border-earth-200 font-bold text-earth-600 text-sm">TOTAL FACTURA: $${newOrder.total.toLocaleString('es-CO')} COP</div>
+      `;
+
+      cart = {};
+      updateCartBadge();
+      renderProducts();
+      closeCartModal();
+      document.getElementById('invoice-modal').classList.remove('hidden');
+    }
+
+    function closeInvoiceModal() {
+      document.getElementById('invoice-modal').classList.add('hidden');
+    }
+
+    // PANEL DE ADMINISTRACIÓN E INVENTARIO
+    function renderAdminTable() {
+      const cityFilter = document.getElementById('filter-city').value;
+      const volumeFilter = document.getElementById('filter-volume').value;
+      const tbody = document.getElementById('excel-table-body');
+
+      // Render de tarjetas de inventario
+      const invContainer = document.getElementById('admin-inventory-cards');
+      invContainer.innerHTML = PRODUCTS.map(p => {
+        const stock = inventory[p.id] || 0;
+        return `
+          <div class="bg-white p-4 rounded-xl border border-earth-200 flex flex-col justify-between shadow-sm">
+            <div>
+              <span class="text-[10px] font-bold uppercase text-earth-600">${p.badge}</span>
+              <h4 class="font-bold text-earth-900 text-sm">${p.name}</h4>
+              <div class="text-xl font-black text-earth-800 mt-2">${stock} <span class="text-xs font-normal text-slate-500">unids</span></div>
+            </div>
+            <div class="flex items-center gap-2 mt-4 pt-3 border-t border-earth-100">
+              <button onclick="adjustInventory('${p.id}', -5)" class="w-1/2 py-1 text-xs bg-slate-100 font-bold text-slate-700 rounded-lg hover:bg-slate-200">-5</button>
+              <button onclick="adjustInventory('${p.id}', 10)" class="w-1/2 py-1 text-xs bg-earth-900 font-bold text-amber-300 rounded-lg hover:bg-earth-800">+10</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      let filtered = orders.filter(o => {
+        if (cityFilter !== 'ALL' && o.city !== cityFilter) return false;
+        if (volumeFilter === 'LOW' && o.units > 4) return false;
+        if (volumeFilter === 'MID' && (o.units < 5 || o.units > 9)) return false;
+        if (volumeFilter === 'HIGH' && o.units < 10) return false;
+        return true;
+      });
+
+      const rev = filtered.reduce((a, b) => a + b.total, 0);
+      const units = filtered.reduce((a, b) => a + b.units, 0);
+      const avg = filtered.length > 0 ? rev / filtered.length : 0;
+      const totalStock = Object.values(inventory).reduce((a, b) => a + b, 0);
+
+      document.getElementById('kpi-revenue').innerText = `$${rev.toLocaleString('es-CO')} COP`;
+      document.getElementById('kpi-orders').innerText = filtered.length;
+      document.getElementById('kpi-units').innerText = `${units} unids`;
+      document.getElementById('kpi-total-stock').innerText = `${totalStock} unids`;
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10" class="text-center py-6 text-slate-400">No hay pedidos registrados con estos criterios.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map((o, idx) => `
+        <tr class="${idx === 0 ? 'highlight-row' : ''} hover:bg-slate-50 transition">
+          <td class="px-4 py-3 font-mono font-bold text-earth-600">${o.id}</td>
+          <td class="px-4 py-3 text-xs text-slate-500">${o.date}</td>
+          <td class="px-4 py-3 font-semibold text-slate-900">${o.customerName}</td>
+          <td class="px-4 py-3">${o.city}</td>
+          <td class="px-4 py-3">${o.location}</td>
+          <td class="px-4 py-3 font-medium text-slate-700">${o.paymentMethod || 'Contraentrega'}</td>
+          <td class="px-4 py-3 text-center font-bold text-slate-800">${o.units}</td>
+          <td class="px-4 py-3 text-xs">${o.itemsDetail}</td>
+          <td class="px-4 py-3 text-right font-bold text-emerald-700">$${o.total.toLocaleString('es-CO')}</td>
+          <td class="px-4 py-3 text-center">
+            <span class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-0.5 rounded-full font-bold">Confirmado</span>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function adjustInventory(id, delta) {
+      inventory[id] = Math.max(0, (inventory[id] || 0) + delta);
+      localStorage.setItem('carameli_inventory', JSON.stringify(inventory));
+      renderAdminTable();
+      renderProducts();
+    }
+
+    function resetInventory() {
+      if(confirm('¿Restablecer inventario de todas las galletas a 50 unidades?')) {
+        inventory = { c1: 50, c2: 50, c3: 50, c4: 50 };
+        localStorage.setItem('carameli_inventory', JSON.stringify(inventory));
+        renderAdminTable();
+        renderProducts();
+      }
+    }
+
+    function exportToExcel() {
+      if (orders.length === 0) {
+        alert('No hay datos registrados para exportar.');
+        return;
+      }
+
+      const excelData = orders.map(o => ({
+        'ID Pedido': o.id,
+        'Fecha y Hora': o.date,
+        'Cliente': o.customerName,
+        'Teléfono': o.phone,
+        'Ciudad': o.city,
+        'Ubicación / Barrio': o.location,
+        'Dirección Exacta': o.address,
+        'Método de Pago': o.paymentMethod || 'Contraentrega',
+        'Volumen (Unidades)': o.units,
+        'Detalle de Productos': o.itemsDetail,
+        'Subtotal ($)': o.subtotal,
+        'Descuento ($)': o.discount,
+        'Total Facturado ($)': o.total,
+        'Estado': o.status
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Pedidos Carameli");
+
+      XLSX.writeFile(workbook, `Carameli_Consolidado_Pedidos_${new Date().toISOString().slice(0,10)}.xlsx`);
+    }
+
+    function clearAllData() {
+      if(confirm('¿Confirmas borrar todo el historial de pedidos almacenados?')) {
+        orders = [];
+        localStorage.removeItem('carameli_orders');
+        renderAdminTable();
+      }
+    }
+
+    // LÓGICA DEL CHATBOT
+    function toggleChatbot() {
+      const box = document.getElementById('chatbot-box');
+      box.classList.toggle('hidden');
+    }
+
+    function sendQuickReply(text) {
+      document.getElementById('chat-input').value = text;
+      sendMessage();
+    }
+
+    function sendMessage() {
+      const input = document.getElementById('chat-input');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const chatContainer = document.getElementById('chat-messages');
+
+      // Mensaje del usuario
+      chatContainer.innerHTML += `
+        <div class="flex justify-end mb-2">
+          <div class="bg-earth-900 text-white p-2.5 rounded-2xl rounded-tr-none text-xs max-w-[80%]">
+            ${text}
+          </div>
+        </div>
+      `;
+
+      input.value = '';
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+
+      // Respuesta automática del bot
+      setTimeout(() => {
+        let reply = "¡Hola! Puedo ayudarte con información sobre las galletas Carameli, envíos, métodos de pago o inventario.";
+        const lower = text.toLowerCase();
+
+        if (lower.includes('precio') || lower.includes('costo') || lower.includes('cuanto')) {
+          reply = "Cada galleta artesanal cuesta **$11.000 COP**. ¡A partir de 5 unidades obtienes un 5% de descuento, y a partir de 10 unidades obtienes 10% de descuento + envío GRATIS!";
+        } else if (lower.includes('stock') || lower.includes('disponib') || lower.includes('inventario')) {
+          reply = `Nuestros stocks actuales en vivo son:<br>• Eclipse: ${inventory.c1} unids<br>• Tentación: ${inventory.c2} unids<br>• Hechizo: ${inventory.c3} unids<br>• Golosa: ${inventory.c4} unids`;
+        } else if (lower.includes('pedido') || lower.includes('comprar') || lower.includes('orden')) {
+          reply = "¡Excelente! Puedes hacer clic en **'Añadir a mi Pedido'** en cualquier galleta y luego pulsar el botón **'Mi Pedido'** en la esquina superior para completar tus datos de envío.";
+        } else if (lower.includes('pago') || lower.includes('medio') || lower.includes('tarjeta')) {
+          reply = "Aceptamos **Pago Contraentrega** (Efectivo/Datáfono), **PSE**, **Nequi / Daviplata** y **Tarjetas de Crédito/Débito**.";
+        }
+
+        chatContainer.innerHTML += `
+          <div class="flex justify-start mb-2">
+            <div class="bg-white border border-earth-100 text-slate-800 p-2.5 rounded-2xl rounded-tl-none text-xs max-w-[85%] shadow-sm">
+              ${reply}
+            </div>
+          </div>
+        `;
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      }, 500);
+    }
+  </script>
+</body>
+</html>
